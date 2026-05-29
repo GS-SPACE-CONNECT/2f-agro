@@ -121,13 +121,14 @@ Sobre as três, um pipeline de Machine Learning treinado no dataset oficial da F
    NDVI, nuvens     (Rasp Pi+OS)     (foto da folha)
 ```
 
-### Decomposição em microsserviços (entregável SOA)
+### Decomposição em microsserviços (arquitetura macro)
 
 | Serviço | Responsabilidade | Tecnologia | Matéria principal |
 |---|---|---|---|
-| **API Gateway** | Roteamento, auth, rate limit | C# .NET 8 Web API | C# + SOA |
+| **Serviço SOA (Java)** | REST `Propriedade` + SOAP cadastro rural + integração NASA/CPTEC | Java 17 + Spring Boot + Spring-WS + H2 | **SOA** (ver § 4.7) |
+| **API Gateway** | Roteamento, auth, rate limit | C# .NET 8 Web API | C# |
 | **Serviço Alertas Agro** | Regras agronômicas, persistência | C# .NET 8 + EF Core | **C#** |
-| **Serviço Notificação** | Push (Expo), email | C# .NET + fila | SOA |
+| **Serviço Notificação** | Push (Expo), email | C# .NET + fila | C# / infra |
 | **Serviço ML Agro** | Inferência (Reg.Linear + Logística + Árvore + K-Means) | Python FastAPI + scikit-learn | **ML** |
 | **Serviço Visão Praga** | YOLO/CNN em folhas → identifica praga | Python + YOLOv8 | **IoT / CV** |
 | **Serviço Ingestão** | Recebe CSV satelital e dados da estação | Python + pandas | ML |
@@ -627,21 +628,28 @@ FiapAgro.Api/
 
 ### 4.7 SOA — Service-Oriented Architecture
 
-**Entrega:** Documentação PDF.
+> ⚠️ **Escopo atualizado em 28/05** — o professor de SOA passou a exigir **implementação real** (código), não só documento. SOA virou um projeto próprio em **Java + Spring Boot**, no repo [2f-agro-soa](https://github.com/GS-SPACE-CONNECT/2f-agro-soa), separado do backend C#. Épico: `2f-agro-soa#1`.
 
-**Estrutura do doc:**
-1. Contexto: por que SOA pro 2F-AGRO (escalabilidade independente, deploy isolado, equipes paralelas)
-2. Bounded Contexts (DDD): Alertas, ML, IoT/Edge, Notificação, Auth
-3. Diagrama dos 8 microsserviços (já no spec)
-4. Padrões de comunicação:
-   - **REST síncrono** pra reads (Mobile → API Gateway → Serviço)
-   - **Mensageria assíncrona** (RabbitMQ) pra notificações e ingestão
-   - **Webhooks** pra integrações externas (EMATER, MAPA)
-5. Service Discovery (consul ou DNS-based)
-6. API Gateway (BFF — Backend For Frontend)
-7. Anti-padrões evitados (chatty services, distributed monolith)
-8. Estratégia de versionamento (URI + Accept header)
-9. Observabilidade (OpenTelemetry → Jaeger + Prometheus)
+**Entrega:** Código-fonte (Java) + Documento PDF com evidências.
+
+**Rubrica (25% cada):** API REST · Web Service SOAP · Integração entre serviços · Documentação da arquitetura.
+
+**Stack:** Java 17, Spring Boot 3, Spring Web (REST), Spring-WS (SOAP contract-first + WSDL), Spring Data JPA + H2.
+
+**Solução (narrativa Space Connect):**
+App moderno (**REST**) ↔ sistema legado de governo simulado (**SOAP** — cadastro rural tipo EMATER/MAPA/CAR) + enriquecimento com **dados espaciais externos** (NASA POWER / CPTEC-INPE). Entidade principal: `Propriedade`.
+
+**Componentes:**
+1. **API REST (Spring Boot)** — CRUD completo de `Propriedade` (GET/POST/PUT/DELETE, JSON, Bean Validation, `@ControllerAdvice`).
+2. **Web Service SOAP (Spring-WS)** — contract-first (XSD → WSDL); operação de consulta (`consultarCadastroRural`) + operação de cadastro/processamento (`registrarCadastroRural`); testado no SoapUI.
+3. **Integração** — (a) REST consome **NASA POWER/CPTEC** (clima por lat/long); (b) cliente REST↔SOAP interno (cadastro valida no "governo").
+4. **POO obrigatória (Java)** — `abstract Alerta` → `AlertaSeca/Geada/Praga` (herança+polimorfismo); `interface ServicoClimatico` (abstração); entidades encapsuladas.
+5. **Persistência** — H2 + Spring Data JPA, CRUD persistente.
+6. **Diferenciais (bônus):** Swagger/OpenAPI, Docker Compose, testes JUnit, mensageria.
+
+**Conteúdo do PDF:** integrantes+RM, problema/objetivos, **diagrama de arquitetura SOA**, explicação REST (endpoints+exemplos), explicação SOAP (operações+XML+WSDL), explicação da integração, evidências/prints, tecnologias, conclusão.
+
+> 📄 A visão conceitual anterior (microsserviços .NET, mensageria, observabilidade) continua válida como **arquitetura macro** do 2F-AGRO no ArchiMate/QA — mas a **entrega avaliada de SOA** é o projeto Java acima.
 
 ### 4.8 QA — ArchiMate + Backlog + Pitch (100 pts)
 
@@ -727,7 +735,9 @@ FiapAgro.Api/
 | 02-04/06 | YOLO/CV treinado + script Python + integração mobile | Python/IA + Mobile |
 | 02-04/06 | OS doc (Raspbian + tuning) — 4h estimadas | Python/IA |
 | 05-06/06 | Cyber threat model + Compliance doc | Negócio + C# |
-| 05-06/06 | SOA doc + Polimento ArchiMate v2 + Backlog v2 | Negócio |
+| 30/05-03/06 | ⚠️ **SOA Java — implementação** (setup + REST CRUD + SOAP/WSDL + integração NASA/CPTEC) — *escopo novo de 28/05, ver § 4.7* | brunão + ruan |
+| 04-05/06 | SOA testes (SoapUI + REST) + evidências + PDF SOA | brunão + ruan |
+| 05-06/06 | Polimento ArchiMate v2 + Backlog v2 | Negócio |
 | 07/06 | Gravação pitch 3min + Revisão final integrada | Negócio + Time |
 | 08/06 | **Buffer pra correções** (CRÍTICO — não pular) | Todos |
 | 09/06 | **Entrega final** até 23:59 no Teams | Líder do grupo |
